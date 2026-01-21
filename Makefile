@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -O3 -march=native -g $(shell pkg-config --cflags x11 xrandr xrender xft)
+CFLAGS = -Wall -O3 -march=native $(shell pkg-config --cflags x11 xrandr xrender xft)
 LIBS = $(shell pkg-config --libs x11 xrandr xrender xft)
 SRC = parte.c
 OBJ = $(SRC:.c=.o)
