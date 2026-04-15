@@ -59,7 +59,8 @@ ssize_t border_size_g = -1;
 int corner_g = CORNER;
 int focus_g = FOCUS_MONITOR;
 ssize_t time_g = -1;
-
+Display *dpy_g;
+Window win_g;
 
 static void
 die(const char *msg)
@@ -416,6 +417,14 @@ void
 exit_signal(int sig)
 {
 	end = 0;
+
+	XClientMessageEvent ev = {0};
+	ev.type = ClientMessage;
+	ev.display = dpy_g;
+	ev.window = win_g;
+	ev.format = 32;
+	XSendEvent(dpy_g, win_g, False, 0, (XEvent*)&ev);
+	XFlush(dpy_g);
 }
 
 void
@@ -588,28 +597,29 @@ main(int argc, char *argv[])
 	create_window(&p);
 	XMapWindow(p.x.dpy, p.x.win);
 
+	dpy_g = p.x.dpy;
+	win_g = p.x.win;
 	signal(SIGALRM, exit_signal);
 	alarm(time_g);
 
 
 	while(end){
-		if(XPending(p.x.dpy) > 0){
-			XEvent event;
-			XNextEvent(p.x.dpy, &event);
+		XEvent event;
+		XNextEvent(p.x.dpy, &event);
+		if(!end) break;
 
-			if(event.type == Expose){
-				XClearWindow(p.x.dpy, p.x.win);
-				draw_text(&p, PADDING_TEXT_X, PADDING_TEXT_Y);
+		if(event.type == Expose){
+			XClearWindow(p.x.dpy, p.x.win);
+			draw_text(&p, PADDING_TEXT_X, PADDING_TEXT_Y);
+		}
+		else if(event.type == ButtonPress){
+			if(event.xbutton.button == Button1){
+				close_Parte(&p);
+				return NORMAL_EXIT;
 			}
-			else if(event.type == ButtonPress){
-				if(event.xbutton.button == Button1){
-					close_Parte(&p);
-					return NORMAL_EXIT;
-				}
-				else if(event.xbutton.button == Button3){
-					close_Parte(&p);
-					return ACTION_EXIT;
-				}
+			else if(event.xbutton.button == Button3){
+				close_Parte(&p);
+				return ACTION_EXIT;
 			}
 		}
 	}
